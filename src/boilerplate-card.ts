@@ -59,15 +59,22 @@ export class BoilerplateCard extends LitElement {
     const columns = this._config.columns || 1;
     const elements = new Array<TemplateResult>();
     const factory = this._handleActionFactory;
+    const width = 100 / columns;
     for (let i = 0; i < this._config.buttons.length; i += columns) {
       const next = i + columns;
       const buttons = this._config.buttons.slice(i, next);
       elements.push(html`
         <div class="row">
           ${buttons.map(function(button) {
+            if (button.spacer) {
+              return html`
+                <ha-icon style=${`width: ${width}%`} .icon=${button.icon || 'mdi:gesture-tap'} class="spacer"></ha-icon>
+              `;
+            }
             const handleAction = factory(button);
             return html`
               <ha-icon
+                style=${`width: ${width}%`}
                 .icon=${button.icon || 'mdi:gesture-tap'}
                 @action=${handleAction}
                 .actionHandler=${actionHandler({
@@ -124,6 +131,25 @@ export class BoilerplateCard extends LitElement {
         color: black;
         background-color: #fce588;
         padding: 8px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: start;
+        flex-wrap: wrap;
+      }
+      .row > ha-icon {
+        padding: 1rem 0;
+        z-index: 100;
+      }
+
+      .row > ha-icon:not(.spacer) {
+        cursor: pointer;
+      }
+
+      ha-icon.spacer {
+        color: rgba(0, 0, 0, 0);
       }
     `;
   }
