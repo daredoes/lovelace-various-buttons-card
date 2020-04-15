@@ -1,13 +1,14 @@
 import { LitElement, html, customElement, property, TemplateResult, CSSResult, css } from 'lit-element';
 import { HomeAssistant, fireEvent, LovelaceCardEditor, ActionConfig } from 'custom-card-helpers';
 
-import { BoilerplateCardConfig } from './types';
+import { BoilerplateCardConfig, ButtonConfig } from './types';
+import './button-config-editor';
 
 const options = {
-  required: {
+  buttons: {
     icon: 'tune',
-    name: 'Required',
-    secondary: 'Required options for this card to function',
+    name: 'Buttons',
+    secondary: 'Buttons used for this card to function',
     show: true,
   },
   actions: {
@@ -50,6 +51,25 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
   @property() private _config?: BoilerplateCardConfig;
   @property() private _toggle?: boolean;
 
+  private updateConfig = (config: BoilerplateCardConfig): void => {
+    fireEvent(this, 'config-changed', { config: config });
+  };
+
+  public updateButtonConfigFactory = (index): Function => {
+    const thisConfig = this._config;
+    const update = this.updateConfig;
+    const func = function(buttonConfig: ButtonConfig): void {
+      const config = Object.assign({}, thisConfig);
+      const buttons = config.buttons ? config.buttons.slice(0) : [];
+      if (buttons && buttons.length > index) {
+        buttons[index] = buttonConfig;
+      }
+      config.buttons = buttons;
+      update(config);
+    };
+    return func;
+  };
+
   public setConfig(config: BoilerplateCardConfig): void {
     this._config = config;
   }
@@ -57,14 +77,6 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
   get _name(): string {
     if (this._config) {
       return this._config.name || '';
-    }
-
-    return '';
-  }
-
-  get _entity(): string {
-    if (this._config) {
-      return this._config.entity || '';
     }
 
     return '';
@@ -78,37 +90,30 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     return false;
   }
 
-  get _show_error(): boolean {
+  get _buttons(): Array<ButtonConfig> {
     if (this._config) {
-      return this._config.show_error || false;
+      return this._config.buttons || new Array<ButtonConfig>();
     }
 
-    return false;
+    return new Array<ButtonConfig>();
   }
 
-  get _tap_action(): ActionConfig {
-    if (this._config) {
-      return this._config.tap_action || { action: 'more-info' };
-    }
-
-    return { action: 'more-info' };
-  }
-
-  get _hold_action(): ActionConfig {
-    if (this._config) {
-      return this._config.hold_action || { action: 'none' };
-    }
-
-    return { action: 'none' };
-  }
-
-  get _double_tap_action(): ActionConfig {
-    if (this._config) {
-      return this._config.double_tap_action || { action: 'none' };
-    }
-
-    return { action: 'none' };
-  }
+  private renderButtonElements = (): TemplateResult => {
+    const buttons = this._buttons;
+    const update = this.updateButtonConfigFactory;
+    const hass = this.hass;
+    const buttonsHTML = buttons.map(function(button, index) {
+      return html`
+        <button-config-editor ._config=${button} .hass=${hass} ._update=${update(index)}></button-config-editor>
+      `;
+    });
+    return html`
+      <div class="values">
+        ${buttonsHTML}
+        <button-config-editor ._update=${update(buttons.length)} .hass=${hass}></button-config-editor>
+      </div>
+    `;
+  };
 
   protected render(): TemplateResult | void {
     if (!this.hass) {
@@ -116,33 +121,21 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     }
 
     // You can restrict on domain type
-    const entities = Object.keys(this.hass.states).filter(eid => eid.substr(0, eid.indexOf('.')) === 'sun');
+    const buttons = this.renderButtonElements();
 
     return html`
       <div class="card-config">
-        <div class="option" @click=${this._toggleOption} .option=${'required'}>
+        <div class="option" @click=${this._toggleOption} .option=${'buttons'}>
           <div class="row">
-            <ha-icon .icon=${`mdi:${options.required.icon}`}></ha-icon>
-            <div class="title">${options.required.name}</div>
+            <ha-icon .icon=${`mdi:${options.buttons.icon}`}></ha-icon>
+            <div class="title">${options.buttons.name}</div>
           </div>
-          <div class="secondary">${options.required.secondary}</div>
+          <div class="secondary">${options.buttons.secondary}</div>
         </div>
-        ${options.required.show
+        ${options.buttons.show
           ? html`
               <div class="values">
-                <paper-dropdown-menu
-                  label="Entity (Required)"
-                  @value-changed=${this._valueChanged}
-                  .configValue=${'entity'}
-                >
-                  <paper-listbox slot="dropdown-content" .selected=${entities.indexOf(this._entity)}>
-                    ${entities.map(entity => {
-                      return html`
-                        <paper-item>${entity}</paper-item>
-                      `;
-                    })}
-                  </paper-listbox>
-                </paper-dropdown-menu>
+                ${buttons}
               </div>
             `
           : ''}
@@ -225,13 +218,6 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
                   @change=${this._valueChanged}
                   >Show Warning?</ha-switch
                 >
-                <ha-switch
-                  aria-label=${`Toggle error ${this._show_error ? 'off' : 'on'}`}
-                  .checked=${this._show_error !== false}
-                  .configValue=${'show_error'}
-                  @change=${this._valueChanged}
-                  >Show Error?</ha-switch
-                >
               </div>
             `
           : ''}
@@ -264,17 +250,19 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     if (this[`_${target.configValue}`] === target.value) {
       return;
     }
+    let config = Object.assign({}, this._config);
     if (target.configValue) {
       if (target.value === '') {
-        delete this._config[target.configValue];
+        delete config[target.configValue];
       } else {
-        this._config = {
-          ...this._config,
+        config = {
+          ...config,
           [target.configValue]: target.checked !== undefined ? target.checked : target.value,
         };
       }
     }
-    fireEvent(this, 'config-changed', { config: this._config });
+
+    fireEvent(this, 'config-changed', { config: config });
   }
 
   static get styles(): CSSResult {
