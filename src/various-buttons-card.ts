@@ -45,7 +45,7 @@ export class VariousButtonsCard extends LitElement {
       throw new Error(localize('common.invalid_configuration'));
     }
 
-    getLovelace().setEditMode(true);
+    //    getLovelace().setEditMode(true);
 
     this._config = {
       ...config,
