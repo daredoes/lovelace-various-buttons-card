@@ -11,7 +11,7 @@ import {
 
 import './editor';
 
-import { BoilerplateCardConfig, ButtonConfig } from './types';
+import { VariousButtonsCardConfig, ButtonConfig } from './types';
 import { actionHandler } from './action-handler-directive';
 import { CARD_VERSION } from './const';
 
@@ -19,27 +19,27 @@ import { localize } from './localize/localize';
 
 /* eslint no-console: 0 */
 console.info(
-  `%c  BOILERPLATE-CARD \n%c  ${localize('common.version')} ${CARD_VERSION}    `,
+  `%c  VARIOUS-BUTTONS-CARD \n%c  ${localize('common.version')} ${CARD_VERSION}    `,
   'color: orange; font-weight: bold; background: black',
   'color: white; font-weight: bold; background: dimgray',
 );
 
 // TODO Name your custom element
-@customElement('boilerplate-card')
-export class BoilerplateCard extends LitElement {
+@customElement('various-buttons-card')
+export class VariousButtonsCard extends LitElement {
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    return document.createElement('boilerplate-card-editor') as LovelaceCardEditor;
+    return document.createElement('various-buttons-card-editor') as LovelaceCardEditor;
   }
 
   public static getStubConfig(): object {
-    return { name: 'test', haptic: true, type: 'custom:boilerplate-card', columns: 3 };
+    return { name: 'test', haptic: true, type: 'custom:various-buttons-card', columns: 3 };
   }
 
   // TODO Add any properities that should cause your element to re-render here
   @property() public hass?: HomeAssistant;
-  @property() private _config?: BoilerplateCardConfig;
+  @property() private _config?: VariousButtonsCardConfig;
 
-  public setConfig(config: BoilerplateCardConfig): void {
+  public setConfig(config: VariousButtonsCardConfig): void {
     // TODO Check for required fields and that they are of the proper format
     if (!config) {
       throw new Error(localize('common.invalid_configuration'));

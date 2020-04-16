@@ -5,28 +5,11 @@ import { OptionConfig } from './option-config';
 import { ButtonConfig } from './types';
 import { HassEntity } from 'home-assistant-js-websocket';
 
+import './action-options.ts';
+
 export interface ActionEditor extends HTMLElement {
   hass?: HomeAssistant;
   setConfig(config: ButtonConfig): void;
-}
-
-@customElement('action-options')
-class Options extends LitElement {
-  @property() public options!: Array<OptionConfig>;
-  @property() private _toggle?: boolean;
-
-  private _toggleThing(): void {
-    this._toggle = !this._toggle;
-  }
-
-  protected render(): TemplateResult | void {
-    const toggle = this._toggleThing;
-    return html`
-      ${this.options.map(function(option) {
-        return option.toTemplateResult(toggle);
-      })}
-    `;
-  }
 }
 
 @customElement('action-config-editor')
@@ -189,6 +172,9 @@ export class ActionConfigEditor extends LitElement implements ActionEditor {
       let config = Object.assign({}, actionConfig);
       if (target.configValue) {
         if (target.configValue === 'action' && target.value === 'none') {
+          if (!config.hasOwnProperty('action')) {
+            return;
+          }
           config = { action: 'none' };
         } else if (target.value === '') {
           delete config[target.configValue];
@@ -208,9 +194,10 @@ export class ActionConfigEditor extends LitElement implements ActionEditor {
             [target.configValue]: target.checked !== undefined ? target.checked : target.value,
           };
         }
+        if (JSON.stringify(config) !== JSON.stringify(actionConfig)) {
+          update(kind, config);
+        }
       }
-
-      update(kind, config);
     };
     return func;
   };

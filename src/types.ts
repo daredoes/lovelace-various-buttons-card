@@ -11,7 +11,7 @@ export interface ButtonConfig {
   double_tap_action?: ActionConfig;
 }
 
-export interface BoilerplateCardConfig {
+export interface VariousButtonsCardConfig {
   type: string;
   name?: string;
   columns?: number;

@@ -1,7 +1,7 @@
 import { LitElement, html, customElement, property, TemplateResult, CSSResult, css } from 'lit-element';
 import { HomeAssistant, fireEvent, LovelaceCardEditor, ActionConfig } from 'custom-card-helpers';
 
-import { BoilerplateCardConfig, ButtonConfig } from './types';
+import { VariousButtonsCardConfig, ButtonConfig } from './types';
 import './button-config-editor';
 
 const options = {
@@ -45,24 +45,34 @@ const options = {
   },
 };
 
-@customElement('boilerplate-card-editor')
-export class BoilerplateCardEditor extends LitElement implements LovelaceCardEditor {
+@customElement('various-buttons-card-editor')
+export class VariousButtonsCardConfigEditor extends LitElement implements LovelaceCardEditor {
   @property() public hass?: HomeAssistant;
-  @property() private _config?: BoilerplateCardConfig;
+  @property() private _config?: VariousButtonsCardConfig;
   @property() private _toggle?: boolean;
 
-  private updateConfig = (config: BoilerplateCardConfig): void => {
+  private updateConfig = (config: VariousButtonsCardConfig): void => {
     fireEvent(this, 'config-changed', { config: config });
   };
 
-  public updateButtonConfigFactory = (index): Function => {
+  public updateButtonConfigFactory = (index: number): Function => {
     const thisConfig = this._config;
     const update = this.updateConfig;
-    const func = function(buttonConfig: ButtonConfig): void {
+    const func = function(buttonConfig?: ButtonConfig, moveUp?: boolean): void {
       const config = Object.assign({}, thisConfig);
       const buttons = config.buttons ? config.buttons.slice(0) : [];
       if (buttons && buttons.length > index) {
-        buttons[index] = buttonConfig;
+        if (!buttonConfig) {
+          buttons.splice(index, 1);
+        } else if (moveUp !== undefined) {
+          const newIndex = index + (moveUp ? -1 : 1);
+          buttons[index] = buttons[newIndex];
+          buttons[newIndex] = buttonConfig;
+        } else {
+          buttons[index] = buttonConfig;
+        }
+      } else if (buttons && buttonConfig) {
+        buttons.push(buttonConfig);
       }
       config.buttons = buttons;
       update(config);
@@ -70,7 +80,7 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     return func;
   };
 
-  public setConfig(config: BoilerplateCardConfig): void {
+  public setConfig(config: VariousButtonsCardConfig): void {
     this._config = config;
   }
 
@@ -90,6 +100,14 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     return false;
   }
 
+  get _columns(): number {
+    if (this._config) {
+      return this._config.columns || 1;
+    }
+
+    return 1;
+  }
+
   get _buttons(): Array<ButtonConfig> {
     if (this._config) {
       return this._config.buttons || new Array<ButtonConfig>();
@@ -102,15 +120,28 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
     const buttons = this._buttons;
     const update = this.updateButtonConfigFactory;
     const hass = this.hass;
+    const numberOfButtons = buttons.length;
     const buttonsHTML = buttons.map(function(button, index) {
       return html`
-        <button-config-editor ._config=${button} .hass=${hass} ._update=${update(index)}></button-config-editor>
+        <button-config-editor
+          ._config=${button}
+          .hass=${hass}
+          .index=${index}
+          .isFirst=${index === 0 ? true : index === numberOfButtons - 1 ? false : undefined}
+          ._update=${update(index)}
+        ></button-config-editor>
       `;
     });
     return html`
       <div class="values">
         ${buttonsHTML}
-        <button-config-editor ._update=${update(buttons.length)} .hass=${hass}></button-config-editor>
+        <button-config-editor
+          ._config=${{}}
+          .index=${buttons.length}
+          ._update=${update(numberOfButtons)}
+          .hass=${hass}
+          .isFirst=${undefined}
+        ></button-config-editor>
       </div>
     `;
   };
@@ -139,61 +170,6 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
               </div>
             `
           : ''}
-        <div class="option" @click=${this._toggleOption} .option=${'actions'}>
-          <div class="row">
-            <ha-icon .icon=${`mdi:${options.actions.icon}`}></ha-icon>
-            <div class="title">${options.actions.name}</div>
-          </div>
-          <div class="secondary">${options.actions.secondary}</div>
-        </div>
-        ${options.actions.show
-          ? html`
-              <div class="values">
-                <div class="option" @click=${this._toggleAction} .option=${'tap'}>
-                  <div class="row">
-                    <ha-icon .icon=${`mdi:${options.actions.options.tap.icon}`}></ha-icon>
-                    <div class="title">${options.actions.options.tap.name}</div>
-                  </div>
-                  <div class="secondary">${options.actions.options.tap.secondary}</div>
-                </div>
-                ${options.actions.options.tap.show
-                  ? html`
-                      <div class="values">
-                        <paper-item>Action Editors Coming Soon</paper-item>
-                      </div>
-                    `
-                  : ''}
-                <div class="option" @click=${this._toggleAction} .option=${'hold'}>
-                  <div class="row">
-                    <ha-icon .icon=${`mdi:${options.actions.options.hold.icon}`}></ha-icon>
-                    <div class="title">${options.actions.options.hold.name}</div>
-                  </div>
-                  <div class="secondary">${options.actions.options.hold.secondary}</div>
-                </div>
-                ${options.actions.options.hold.show
-                  ? html`
-                      <div class="values">
-                        <paper-item>Action Editors Coming Soon</paper-item>
-                      </div>
-                    `
-                  : ''}
-                <div class="option" @click=${this._toggleAction} .option=${'double_tap'}>
-                  <div class="row">
-                    <ha-icon .icon=${`mdi:${options.actions.options.double_tap.icon}`}></ha-icon>
-                    <div class="title">${options.actions.options.double_tap.name}</div>
-                  </div>
-                  <div class="secondary">${options.actions.options.double_tap.secondary}</div>
-                </div>
-                ${options.actions.options.double_tap.show
-                  ? html`
-                      <div class="values">
-                        <paper-item>Action Editors Coming Soon</paper-item>
-                      </div>
-                    `
-                  : ''}
-              </div>
-            `
-          : ''}
         <div class="option" @click=${this._toggleOption} .option=${'appearance'}>
           <div class="row">
             <ha-icon .icon=${`mdi:${options.appearance.icon}`}></ha-icon>
@@ -210,14 +186,14 @@ export class BoilerplateCardEditor extends LitElement implements LovelaceCardEdi
                   .configValue=${'name'}
                   @value-changed=${this._valueChanged}
                 ></paper-input>
-                <br />
-                <ha-switch
-                  aria-label=${`Toggle warning ${this._show_warning ? 'off' : 'on'}`}
-                  .checked=${this._show_warning !== false}
-                  .configValue=${'show_warning'}
-                  @change=${this._valueChanged}
-                  >Show Warning?</ha-switch
-                >
+                <paper-input
+                  label="Columns"
+                  min="1"
+                  type="number"
+                  .value=${this._columns}
+                  .configValue=${'columns'}
+                  @value-changed=${this._valueChanged}
+                ></paper-input>
               </div>
             `
           : ''}

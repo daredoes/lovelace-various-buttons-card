@@ -25,7 +25,7 @@ export class OptionConfig {
     this.children = children;
   }
 
-  public toTemplateResult(toggleCallback: Function): TemplateResult {
+  public toTemplateResult = (toggleCallback: Function): TemplateResult => {
     const result = html`
       <action-option
         .show=${this.show}
@@ -42,5 +42,5 @@ export class OptionConfig {
       </action-option>
     `;
     return result;
-  }
+  };
 }
